@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>image_to_icon_converter</RootNamespace>
+    <RootNamespace>ImageToIconConverter</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
@@ -11,8 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="image-to-icon-converter.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="System.CommandLine" Version="2.0.1" />
   </ItemGroup>
 
 </Project>

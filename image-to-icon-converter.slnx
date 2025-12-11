@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="image-to-icon-converter.Tests/image-to-icon-converter.Tests.csproj" />
   <Project Path="image-to-icon-converter/image-to-icon-converter.csproj" />
 </Solution>
