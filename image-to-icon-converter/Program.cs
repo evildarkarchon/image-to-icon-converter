@@ -1,4 +1,6 @@
-﻿using ImageToIconConverter.Models;
+﻿using System.CommandLine;
+using System.CommandLine.Invocation;
+using ImageToIconConverter.Models;
 using ImageToIconConverter.Services;
 
 namespace ImageToIconConverter;
@@ -17,15 +19,7 @@ public static class Program
     /// <returns>Exit code indicating success (0) or failure (non-zero).</returns>
     public static int Main(string[] args)
     {
-        try
-        {
-            return Run(args);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Unexpected error: {ex.Message}");
-            return (int)ExitCode.OutputWriteFailed;
-        }
+        return Run(args);
     }
 
     /// <summary>
@@ -33,182 +27,105 @@ public static class Program
     /// </summary>
     internal static int Run(string[] args)
     {
-        // Handle help and version
-        if (args.Length == 0 || HasFlag(args, "--help", "-h", "-?"))
-        {
-            ShowHelp();
-            return args.Length == 0 ? (int)ExitCode.InvalidArguments : (int)ExitCode.Success;
-        }
-
-        if (HasFlag(args, "--version", "-v"))
-        {
-            Console.WriteLine($"image-to-icon-converter {Version}");
-            return (int)ExitCode.Success;
-        }
-
-        // Parse arguments
-        var options = ParseArguments(args);
-        if (options is null)
-        {
-            return (int)ExitCode.InvalidArguments;
-        }
-
-        // Execute conversion
-        var result = ExecuteConversion(options);
-
-        if (result.Success)
-        {
-            Console.WriteLine($"Successfully created: {result.OutputPath}");
-        }
-        else
-        {
-            Console.Error.WriteLine($"Error: {result.ErrorMessage}");
-        }
-
-        return (int)result.ExitCode;
+        var rootCommand = CreateRootCommand();
+        return rootCommand.Invoke(args);
     }
 
     /// <summary>
-    /// Shows help information.
+    /// Creates and configures the root command with all options.
     /// </summary>
-    private static void ShowHelp()
+    internal static RootCommand CreateRootCommand()
     {
-        Console.WriteLine("""
-            image-to-icon-converter - Convert images to ICO format for use as Windows icons
-
-            Usage:
-              image-to-icon-converter --input <path> [options]
-              image-to-icon-converter -i <path> [options]
-
-            Options:
-              -i, --input <path>     (Required) Input image file path (PNG, JPEG, or BMP)
-              -o, --output <path>    Output ICO file path (default: input path with .ico extension)
-              -s, --sizes <sizes>    Comma-separated icon sizes to generate (default: 16,32,48,256)
-                                     Valid sizes: 16, 32, 48, 256
-              -y, --overwrite        Overwrite output file if it exists without prompting
-              -h, --help             Show this help message
-              -v, --version          Show version information
-
-            Examples:
-              image-to-icon-converter -i logo.png
-              image-to-icon-converter -i logo.png -o app.ico
-              image-to-icon-converter -i logo.png -s 16,32,48 -y
-              image-to-icon-converter --input logo.png --sizes 256 --overwrite
-            """);
-    }
-
-    /// <summary>
-    /// Parses command-line arguments into ConvertOptions.
-    /// </summary>
-    private static ConvertOptions? ParseArguments(string[] args)
-    {
-        string? inputPath = null;
-        string? outputPath = null;
-        string? sizesString = null;
-        bool overwrite = false;
-
-        for (int i = 0; i < args.Length; i++)
+        var rootCommand = new RootCommand("Convert images to ICO format for use as Windows icons")
         {
-            var arg = args[i];
-
-            switch (arg)
-            {
-                case "-i":
-                case "--input":
-                    if (i + 1 >= args.Length)
-                    {
-                        Console.Error.WriteLine("Error: --input requires a file path argument.");
-                        return null;
-                    }
-                    inputPath = args[++i];
-                    break;
-
-                case "-o":
-                case "--output":
-                    if (i + 1 >= args.Length)
-                    {
-                        Console.Error.WriteLine("Error: --output requires a file path argument.");
-                        return null;
-                    }
-                    outputPath = args[++i];
-                    break;
-
-                case "-s":
-                case "--sizes":
-                    if (i + 1 >= args.Length)
-                    {
-                        Console.Error.WriteLine("Error: --sizes requires a comma-separated list of sizes.");
-                        return null;
-                    }
-                    sizesString = args[++i];
-                    break;
-
-                case "-y":
-                case "--overwrite":
-                    overwrite = true;
-                    break;
-
-                default:
-                    // Check if it's an unknown option
-                    if (arg.StartsWith('-'))
-                    {
-                        Console.Error.WriteLine($"Error: Unknown option '{arg}'. Use --help for usage information.");
-                        return null;
-                    }
-                    // If no input specified yet and this is a standalone argument, treat as input
-                    if (inputPath is null)
-                    {
-                        inputPath = arg;
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine($"Error: Unexpected argument '{arg}'. Use --help for usage information.");
-                        return null;
-                    }
-                    break;
-            }
-        }
-
-        // Validate required input
-        if (string.IsNullOrWhiteSpace(inputPath))
-        {
-            Console.Error.WriteLine("Error: --input is required. Use --help for usage information.");
-            return null;
-        }
-
-        // Parse sizes if provided
-        IconSize[]? sizes = null;
-        if (!string.IsNullOrWhiteSpace(sizesString))
-        {
-            sizes = ParseSizes(sizesString);
-            if (sizes is null)
-            {
-                Console.Error.WriteLine($"Error: Invalid sizes '{sizesString}'. Valid sizes are: 16, 32, 48, 256");
-                return null;
-            }
-        }
-
-        return new ConvertOptions
-        {
-            InputPath = inputPath,
-            OutputPath = outputPath,
-            Sizes = sizes,
-            Overwrite = overwrite
+            Name = "image-to-icon-converter"
         };
-    }
 
-    /// <summary>
-    /// Checks if any of the specified flags are present in args.
-    /// </summary>
-    private static bool HasFlag(string[] args, params string[] flags)
-    {
-        return args.Any(arg => flags.Contains(arg, StringComparer.OrdinalIgnoreCase));
+        // Define options
+        var inputOption = new Option<FileInfo?>(
+            aliases: ["--input", "-i"],
+            description: "Input image file path (PNG, JPEG, or BMP)")
+        {
+            IsRequired = true
+        };
+
+        var outputOption = new Option<FileInfo?>(
+            aliases: ["--output", "-o"],
+            description: "Output ICO file path (default: input path with .ico extension)");
+
+        var sizesOption = new Option<string?>(
+            aliases: ["--sizes", "-s"],
+            description: "Comma-separated icon sizes to generate (default: 16,32,48,256). Valid sizes: 16, 32, 48, 256");
+
+        var overwriteOption = new Option<bool>(
+            aliases: ["--overwrite", "-y"],
+            description: "Overwrite output file if it exists without prompting",
+            getDefaultValue: () => false);
+
+        // Add options to command
+        rootCommand.AddOption(inputOption);
+        rootCommand.AddOption(outputOption);
+        rootCommand.AddOption(sizesOption);
+        rootCommand.AddOption(overwriteOption);
+
+        // Set up the handler
+        rootCommand.SetHandler((InvocationContext context) =>
+        {
+            var input = context.ParseResult.GetValueForOption(inputOption);
+            var output = context.ParseResult.GetValueForOption(outputOption);
+            var sizes = context.ParseResult.GetValueForOption(sizesOption);
+            var overwrite = context.ParseResult.GetValueForOption(overwriteOption);
+
+            // Validate input was provided (should be enforced by IsRequired)
+            if (input is null)
+            {
+                Console.Error.WriteLine("Error: --input is required. Use --help for usage information.");
+                context.ExitCode = (int)ExitCode.InvalidArguments;
+                return;
+            }
+
+            // Parse sizes if provided
+            IconSize[]? parsedSizes = null;
+            if (!string.IsNullOrWhiteSpace(sizes))
+            {
+                parsedSizes = ParseSizes(sizes);
+                if (parsedSizes is null)
+                {
+                    Console.Error.WriteLine($"Error: Invalid sizes '{sizes}'. Valid sizes are: 16, 32, 48, 256");
+                    context.ExitCode = (int)ExitCode.InvalidArguments;
+                    return;
+                }
+            }
+
+            var options = new ConvertOptions
+            {
+                InputPath = input.FullName,
+                OutputPath = output?.FullName,
+                Sizes = parsedSizes,
+                Overwrite = overwrite
+            };
+
+            var result = ExecuteConversion(options);
+
+            if (result.Success)
+            {
+                Console.WriteLine($"Successfully created: {result.OutputPath}");
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error: {result.ErrorMessage}");
+            }
+
+            context.ExitCode = (int)result.ExitCode;
+        });
+
+        return rootCommand;
     }
 
     /// <summary>
     /// Parses a comma-separated sizes string into an array of IconSize.
     /// </summary>
-    private static IconSize[]? ParseSizes(string sizesString)
+    internal static IconSize[]? ParseSizes(string sizesString)
     {
         var parts = sizesString.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var sizes = new List<IconSize>();

@@ -49,7 +49,7 @@ The CLI SHALL handle output file conflicts safely.
 
 ### Requirement: Help and Usage Information
 
-The CLI SHALL provide built-in help documentation.
+The CLI SHALL provide built-in help documentation generated automatically by System.CommandLine.
 
 #### Scenario: Display help
 - **WHEN** user runs `image-to-icon-converter --help`
@@ -58,6 +58,10 @@ The CLI SHALL provide built-in help documentation.
 #### Scenario: Display version
 - **WHEN** user runs `image-to-icon-converter --version`
 - **THEN** the application version is displayed
+
+#### Scenario: Short option help
+- **WHEN** user runs `image-to-icon-converter -h` or `image-to-icon-converter -?`
+- **THEN** usage information is displayed including all options and their descriptions
 
 ### Requirement: Exit Codes
 
@@ -71,4 +75,16 @@ The CLI SHALL return meaningful exit codes for scripting support.
 - **WHEN** required arguments are missing
 - **THEN** exit code 1 is returned
 - **AND** usage information is displayed
+
+### Requirement: CLI Framework
+
+The CLI SHALL use System.CommandLine for argument parsing and command handling.
+
+#### Scenario: Tab completion support
+- **WHEN** user configures shell completion for the CLI
+- **THEN** tab completion works for all options
+
+#### Scenario: Consistent option handling
+- **WHEN** user provides options in any order
+- **THEN** all options are parsed correctly regardless of position
 
