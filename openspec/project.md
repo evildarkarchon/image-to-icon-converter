@@ -96,6 +96,7 @@ public void ConvertToIcon_ValidPngInput_CreatesIcoFile()
 - Keep files small (< 100KB)
 - Include valid and invalid samples for each format
 - Include edge cases (1x1, large images, transparent PNGs)
+- Uses the LunaPaint image test suite.
 
 ### Git Workflow
 

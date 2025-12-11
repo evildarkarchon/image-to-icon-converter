@@ -1,0 +1,3 @@
+[submodule "image-to-icon-converter.Tests/TestData"]
+	path = image-to-icon-converter.Tests/TestData
+	url = https://github.com/lunapaint/imagetestsuite.git
